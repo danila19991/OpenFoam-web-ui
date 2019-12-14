@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tasks</title>
+</head>
+<body>
+
+<h1>Tasks</h1>
+
+<p>{{ user_name }} previous tasks</p>
+
+<form action="{% url 'taskshower:index' %}"  method="post">
+    {% csrf_token %}
+    <input type="submit" name="exit" value="exit">
+</form>
+
+{% if any_data %}
+    {% for data in any_data %}
+        <p>{{ data }}</p>
+
+    {% endfor %}
+{%  endif %}
+
+</body>
+</html>
