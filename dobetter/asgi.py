@@ -1,5 +1,5 @@
 """
-ASGI config for dobetter2 project.
+ASGI config for dobetter project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 

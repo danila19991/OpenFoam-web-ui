@@ -6,6 +6,8 @@ from django.template import loader
 from django.db.utils import IntegrityError
 from django.urls import reverse, resolve
 from django.contrib.auth.decorators import login_required
+from taskshower.models import Tasks
+from taskshower.tasks import execute_task
 
 
 def register(request):
@@ -51,14 +53,46 @@ def login_view(request):
 
 @login_required(login_url='/login')
 def index(request):
-    if request.method == 'POST':
-        if 'exit' in request.POST:
-            logout(request)
-            return HttpResponseRedirect(reverse('taskshower:login'))
-
     template = loader.get_template('index.html')
     context = {
         'any_data': [],
         'user_name': request.user.username
     }
+    if request.method == 'POST':
+        if 'exit' in request.POST:
+            logout(request)
+            return HttpResponseRedirect(reverse('taskshower:login'))
+
+        if 'time' in request.POST and 'name' in request.POST:
+            try:
+                val = int(request.POST['time'])
+                name = request.POST['name']
+                if val < 1 or val > 60:
+                    raise ValueError
+                task = Tasks.objects.create(name=name, time=val,
+                                            user=request.user,
+                                            state=Tasks.QUEUED)
+                task.save()
+                execute_task.delay(task.pk)
+                context['correct_task'] = request.POST['name']
+            except ValueError:
+                context['incorrect_task_t'] = request.POST['time']
+                context['incorrect_task_n'] = request.POST['name']
+
+    tasks_descr = list()
+    tasks = Tasks.objects.filter(user=request.user)
+    state_dict = {
+        Tasks.QUEUED: 'queued',
+        Tasks.IN_PROCESS: 'in progress',
+        Tasks.ERRORED: 'errored',
+        Tasks.FINISHED: 'finished',
+    }
+    for task in tasks:
+        tasks_descr.append((
+            task.name,
+            state_dict[task.state]
+        ))
+
+    context['tasks'] = tasks_descr
+
     return HttpResponse(template.render(context, request))

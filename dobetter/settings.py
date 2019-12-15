@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
 import os
+# import djcelery
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -27,6 +28,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+# djcelery.setup_loader()
 
 # Application definition
 
@@ -38,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'taskshower.apps.TaskshowerConfig'
+    # 'djcelery',
 ]
 
 MIDDLEWARE = [
@@ -74,12 +77,33 @@ WSGI_APPLICATION = 'dobetter.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
+env = os.environ.copy()
+if 'GAC_DB_LOCALHOST' in env:
+    db_host = env['GAC_DB_LOCALHOST']
+else:
+    db_host = 'localhost'
+if 'GAC_QUEUE_LOCALHOST' in env:
+    queue_host = env['GAC_QUEUE_LOCALHOST']
+else:
+    queue_host = 'localhost'
+
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'postgres',
+        'USER': 'postgres',
+        'PASSWORD': 'postgres',
+        'HOST': db_host,
+        'PORT': '5432',
     }
 }
+
+BROKER_HOST = queue_host
+BROKER_PORT = 5672
+BROKER_USER = "guest"
+BROKER_PASSWORD = "guest"
+BROKER_VHOST = "my_vhost"
 
 
 # Password validation
