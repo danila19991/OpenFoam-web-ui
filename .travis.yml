@@ -6,7 +6,7 @@ services:
 addons:
   postgresql: "9.6"
 env:
-  - DOCKER_COMPOSE_VERSION=1.4.2
+  - DOCKER_COMPOSE_VERSION=1.23.1
 before_script:
 #  - psql -c 'create database postgres;' -U postgres
   - sudo rm /usr/local/bin/docker-compose
