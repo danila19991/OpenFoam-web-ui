@@ -1,15 +1,26 @@
 language: python
-addons:
-  postgresql: "9.6"
-before_script:
-#  - psql -c 'create database postgres;' -U postgres
-  - python3 manage.py makemigrations
-  - python3 manage.py migrate
 python:
   - "3.6"
+services:
+  - docker
+addons:
+  postgresql: "9.6"
+env:
+  - DOCKER_COMPOSE_VERSION=1.4.2
+before_script:
+#  - psql -c 'create database postgres;' -U postgres
+  - sudo rm /usr/local/bin/docker-compose
+  - curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
+  - chmod +x docker-compose
+  - sudo mv docker-compose /usr/local/bin
+  - docker-compose up
+  - python3 manage.py makemigrations
+  - python3 manage.py migrate
 # command to install dependencies
 install:
   - pip install -r requirements.txt
 # command to run tests
 script:
   - pytest
+after_script:
+  - docker-compose down
