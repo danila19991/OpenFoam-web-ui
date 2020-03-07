@@ -21,4 +21,4 @@ class Tasks(models.Model):
     state = models.IntegerField(choices=TASK_STATES, default=QUEUED)
     name = models.TextField(null=False)
     time = models.IntegerField(null=False)
-    related_user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)

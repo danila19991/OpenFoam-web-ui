@@ -80,7 +80,7 @@ def index(request):
                 context['incorrect_task_n'] = request.POST['name']
 
     tasks_descr = list()
-    tasks = Tasks.objects.filter(related_user=request.user)
+    tasks = Tasks.objects.filter(user=request.user)
     state_dict = {
         Tasks.QUEUED: 'queued',
         Tasks.IN_PROCESS: 'in progress',
