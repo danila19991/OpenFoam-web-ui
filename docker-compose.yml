@@ -4,15 +4,15 @@
 
 version: "3"
 services:
-  bd:
-    image: postgres
-    environment:
-      - POSTGRES_PASSWORD=postgres
-    container_name: some-postgres
-    ports:
-      - "127.0.0.1:5432:5432"
-    networks:
-      - mynet
+#  bd:
+#    image: postgres
+#    environment:
+#      - POSTGRES_PASSWORD=postgres
+#    container_name: some-postgres
+#    ports:
+#      - "127.0.0.1:5432:5432"
+#    networks:
+#      - mynet
   queue:
     image: rabbitmq:3
     container_name: some-rabbit
@@ -25,16 +25,16 @@ services:
     networks:
       - mynet
     hostname: my-rabbit
-  worker:
-    build: .
-    depends_on:
-      - bd
-      - queue
-    environment:
-      - GAC_DB_LOCALHOST=bd
-      - GAC_QUEUE_LOCALHOST=queue
-    networks:
-      - mynet
+#  worker:
+#    build: .
+#    depends_on:
+#      - bd
+#      - queue
+#    environment:
+#      - GAC_DB_LOCALHOST=bd
+#      - GAC_QUEUE_LOCALHOST=queue
+#    networks:
+#      - mynet
 
 networks:
   mynet:
