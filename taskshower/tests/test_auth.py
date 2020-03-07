@@ -14,8 +14,6 @@ def first_user_in_bd(request, db, client):
     user.save()
     yield user
     users = User.objects.all().delete()
-    # for user in users:
-    #     user.delete()
 
 
 @pytest.mark.django_db

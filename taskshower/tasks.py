@@ -1,7 +1,7 @@
 import logging
 import time
 
-from dobetter.celery import app
+from remoteexperements.celery import app
 from taskshower.models import Tasks
 
 
