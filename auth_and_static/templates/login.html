@@ -11,14 +11,14 @@
     <p>user {{ logged }} succesfully logged in</p>
 {% elif incorrect_data %}
     <p>incorrect data</p>
-    <form action="{% url 'taskshower:login' %}"  method="post">
+    <form action="{% url 'auth_and_static:login' %}"  method="post">
         {% csrf_token %}
         <input type="text" name="user_name" id="user_name" value="{{incorrect_data}}">
         <input type="password" name="password" id="password">
         <input type="submit" value="submit">
     </form>
 {% else %}
-    <form action="{% url 'taskshower:login' %}"  method="post">
+    <form action="{% url 'auth_and_static:login' %}"  method="post">
         {% csrf_token %}
         <input type="text" name="user_name" id="user_name" placeholder="user name">
         <input type="password" name="password" id="password">
@@ -26,7 +26,7 @@
     </form>
 {% endif %}
 
-<p>new to out service? <a href="{% url 'taskshower:register' %}">Registration</a> </p>
+<p>new to out service? <a href="{% url 'auth_and_static:register' %}">Registration</a> </p>
 
 {% if any_data %}
     {% for data in any_data %}

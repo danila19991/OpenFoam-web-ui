@@ -36,7 +36,7 @@ def test_check_registration(client, first_user_in_bd):
         'user_name': UserParams.second_user_name,
         'password': UserParams.second_user_pass,
     }
-    resp = client.post(reverse('taskshower:register'), context)
+    resp = client.post(reverse('auth_and_static:register'), context)
     assert resp.status_code == TestConstants.redirect_status_code
     assert resp['Location'] == TestConstants.task_url
 
@@ -52,7 +52,7 @@ def test_check_registration_used_username(client, first_user_in_bd):
         'user_name': UserParams.first_user_name,
         'password': UserParams.first_user_pass,
     }
-    resp = client.post(reverse('taskshower:register'), context)
+    resp = client.post(reverse('auth_and_static:register'), context)
     assert resp.status_code == TestConstants.ok_status_code
     assert f'user name {UserParams.first_user_name} has already used' in \
         resp.content.decode()
@@ -70,7 +70,7 @@ def test_check_login(client, first_user_in_bd):
         'user_name': UserParams.first_user_name,
         'password': UserParams.first_user_pass,
     }
-    resp = client.post(reverse('taskshower:login'), context)
+    resp = client.post(reverse('auth_and_static:login'), context)
     assert resp.status_code == TestConstants.redirect_status_code
     assert resp['Location'] == TestConstants.task_url
 
@@ -81,6 +81,6 @@ def test_check_login_incorrect_pass(client, first_user_in_bd):
         'user_name': UserParams.first_user_name,
         'password': UserParams.incorrect_pass,
     }
-    resp = client.post(reverse('taskshower:login'), context)
+    resp = client.post(reverse('auth_and_static:login'), context)
     assert resp.status_code == TestConstants.ok_status_code
     assert 'incorrect data' in resp.content.decode()

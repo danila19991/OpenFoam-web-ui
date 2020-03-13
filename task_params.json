@@ -1,0 +1,17 @@
+[
+  {
+    "name": "hello world",
+    "param_blocks": [
+      {
+        "name": "base",
+        "params": [
+          {
+            "name": "name",
+            "type": "string"
+          }
+        ],
+        "need_file": true
+      }
+    ]
+  }
+]

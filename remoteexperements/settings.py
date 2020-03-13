@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'taskshower.apps.TaskshowerConfig'
+    'auth_and_static.apps.TaskshowerConfig',
+    'task_controller.apps.TaskControllerConfig'
     # 'djcelery',
 ]
 
@@ -155,3 +156,5 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+
+APPEND_SLASH = False

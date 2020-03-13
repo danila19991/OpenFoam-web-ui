@@ -2,4 +2,4 @@ from django.apps import AppConfig
 
 
 class TaskshowerConfig(AppConfig):
-    name = 'taskshower'
+    name = 'auth_and_static'

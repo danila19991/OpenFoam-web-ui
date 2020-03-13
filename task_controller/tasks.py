@@ -2,7 +2,7 @@ import logging
 import time
 
 from remoteexperements.celery import app
-from taskshower.models import Tasks
+from task_controller.models import Tasks
 
 
 @app.task
