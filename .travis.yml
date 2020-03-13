@@ -16,7 +16,8 @@ before_script:
   - docker-compose up -d
   - sleep 10
   - python3 manage.py makemigrations
-  - python3 manage.py makemigrations taskshower
+  - python3 manage.py makemigrations auth_and_static
+  - python3 manage.py makemigrations task_controller
   - python3 manage.py migrate
 # command to install dependencies
 install:

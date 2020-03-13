@@ -22,3 +22,4 @@ class Tasks(models.Model):
     name = models.TextField(null=False)
     time = models.IntegerField(null=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+

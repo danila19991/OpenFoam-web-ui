@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <title>Tasks</title>
+</head>
+<body>
+
+<h1>Tasks</h1>
+
+<p>{{ user_name }} previous tasks</p>
+
+<form action="{% url 'auth_and_static:index' %}"  method="post">
+    {% csrf_token %}
+    <input type="submit" name="exit" value="exit">
+</form>
+
+<form id="new_task"  method="post">
+    {% csrf_token %}
+    <input type="text" name="name" placeholder="name">
+    <input type="text" name="time" placeholder="10">
+    <input type="submit" name="submit" value="submit">
+</form>
+
+{% if correct_task %}
+    <p>{{ correct_task }} was accepted</p>
+{% endif %}
+
+{% if incorrect_task_t and incorrect_task_n %}
+    <p>{{ incorrect_task_n }} with time {{ incorrect_task_t }} was not accepted</p>
+{% endif %}
+
+<table id="task_list">
+<tr><td>имя</td><td>состояние</td></tr>
+{% for task in tasks %}
+    <tr>
+        {% for elem in task %}
+            <td>{{ elem }}</td>
+        {% endfor %}
+    </tr>
+{% endfor %}
+</table>
+
+{% if any_data %}
+    {% for data in any_data %}
+        <p>{{ data }}</p>
+
+    {% endfor %}
+{%  endif %}
+
+<script>
+
+function render_tasks(tasks){
+    var result = "<tr><td>имя</td><td>состояние</td></tr>";
+
+    tasks.forEach(function (entry) {
+        result += "<tr><td>" + entry.name + "</td><td>" + entry.state + "</td></tr>";
+    });
+
+    console.log(result);
+
+    $( "#task_list" ).html(result);
+}
+function update_table() {
+
+        let id_product = 321;
+        let qty_product = 2;
+
+        $.ajax({
+
+            url: "api/task",
+            // dataType: "json", // Для использования JSON формата получаемых данных
+            method: "GET", // Что бы воспользоваться POST методом, меняем данную строку на POST
+            //data: {"id_product": id_product,"qty_product": qty_product},
+            success: function (data) {
+                console.log(data.status);
+                if (data.status === "ok") {
+                    render_tasks(data.tasks);
+                }
+
+
+                console.log(data); // Возвращаемые данные выводим в консоль
+            },
+            error: function (jqxhr, status, errorMsg) {
+                console.log("error");
+                console.log(jqxhr); // Возвращаемые данные выводим в консоль
+                console.log(status); // Возвращаемые данные выводим в консоль
+                console.log(errorMsg); // Возвращаемые данные выводим в консоль
+            }
+        });
+
+}
+
+$( "#new_task" ).submit(function( event ) {
+    console.log(event);
+    var data = $('#new_task').serializeArray().reduce(function(obj, item) {
+    obj[item.name] = item.value;
+    return obj;
+}, {});
+    console.log(data);
+
+        $.ajax({
+
+      url: "api/task/",
+     dataType: "json", // Для использования JSON формата получаемых данных
+       	method: "POST", // Что бы воспользоваться POST методом, меняем данную строку на POST
+    	data: data,
+       	success: function(data) {
+update_table();
+ 		console.log(data); // Возвращаемые данные выводим в консоль
+       },
+       error: function(jqxhr, status, errorMsg) {
+        console.log("error");
+ 		console.log(jqxhr); // Возвращаемые данные выводим в консоль
+ 		console.log(status); // Возвращаемые данные выводим в консоль
+ 		console.log(errorMsg); // Возвращаемые данные выводим в консоль
+       }
+ });
+//  alert( "Handler for .submit() called." );
+  event.preventDefault();
+});
+
+$(document).ready(update_table());
+var intervalID = setInterval(update_table, 5000);
+</script>
+
+</body>
+</html>

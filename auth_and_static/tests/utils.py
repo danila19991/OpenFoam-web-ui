@@ -17,9 +17,9 @@ class UserParams:
 class TestConstants:
     ok_status_code = 200
     redirect_status_code = 302
-    register_url = '/register'
+    register_url = '/register/'
     register_template = 'register.html'
-    login_url = '/login'
+    login_url = '/login/'
     login_template = 'login.html'
     task_url = '/'
     task_template = 'index.html'

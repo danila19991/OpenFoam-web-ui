@@ -7,7 +7,7 @@ from .utils import TestConstants, first_user_in_bd_logged_in, UserParams
 
 @pytest.mark.django_db
 def test_task_not_logged_in(client):
-    resp = client.get(reverse('taskshower:index'))
+    resp = client.get(reverse('auth_and_static:index'))
     assert resp.status_code == TestConstants.redirect_status_code
     assert resp['Location'] == TestConstants.login_url + '?next=' + \
         TestConstants.task_url
@@ -15,7 +15,7 @@ def test_task_not_logged_in(client):
 
 @pytest.mark.django_db
 def test_task_url_location(client, first_user_in_bd_logged_in):
-    resp = client.get(reverse('taskshower:index'))
+    resp = client.get(reverse('auth_and_static:index'))
     assert resp.status_code == TestConstants.ok_status_code
     assert f'{UserParams.first_user_name} previous tasks' in \
            resp.content.decode()
@@ -25,11 +25,11 @@ def test_task_url_location(client, first_user_in_bd_logged_in):
 @pytest.mark.django_db
 def test_task_log_out(client, first_user_in_bd_logged_in):
     content = {'exit': 'exit'}
-    resp = client.post(reverse('taskshower:index'), content)
+    resp = client.post(reverse('auth_and_static:index'), content)
     assert resp.status_code == TestConstants.redirect_status_code
     assert resp['Location'] == TestConstants.login_url
 
-    resp = client.get(reverse('taskshower:index'))
+    resp = client.get(reverse('auth_and_static:index'))
     assert resp.status_code == TestConstants.redirect_status_code
     assert resp['Location'] == TestConstants.login_url + '?next=' + \
         TestConstants.task_url
