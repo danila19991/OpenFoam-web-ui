@@ -47,7 +47,7 @@ def login_view(request):
     return HttpResponse(template.render(context, request))
 
 
-@login_required(login_url='/login')
+@login_required(login_url='/login/')
 def index(request):
     template = loader.get_template('index.html')
     context = {
