@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 import datetime
 
 # Create your models here.
@@ -24,7 +25,7 @@ class Tasks(models.Model):
     description = models.TextField(null=True)
     log = models.TextField(null=True)
     result = models.FileField(null=True, upload_to='results/')
-    accept_time = models.DateTimeField(default=datetime.datetime.now())
+    accept_time = models.DateTimeField(default=timezone.now)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
 
