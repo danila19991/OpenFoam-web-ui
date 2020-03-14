@@ -1,8 +1,57 @@
-from django.http import HttpResponse, JsonResponse
-from .models import Tasks
+from django.http import HttpResponse, JsonResponse, FileResponse
+from .models import Tasks, Params
 
 
-def list_view(request):
+def result(request):
+    if not request.user.is_authenticated:
+        result = {
+            'status': 'error',
+            'message': 'need auth'
+        }
+        return JsonResponse(result, content_type='application/json', status=403)
+    id = request.GET.get('id', None)
+    if id is not None:
+        try:
+            id = int(id)
+        except ValueError:
+            result = {
+                'status': 'error',
+                'message': 'incorrect id'
+            }
+            return JsonResponse(result, content_type='application/json', status=400)
+
+        task_query = Tasks.objects.filter(id=id)
+        if not len(task_query):
+            result = {
+                'status': 'error',
+                'message': 'task not found'
+            }
+            return JsonResponse(result, content_type='application/json', status=404)
+        task = task_query[0]
+        if task.user != request.user:
+            result = {
+                'status': 'error',
+                'message': 'wrong user'
+            }
+            return JsonResponse(result, content_type='application/json', status=403)
+
+        if not task.result:
+            result = {
+                'status': 'error',
+                'message': 'no result'
+            }
+            return JsonResponse(result, content_type='application/json', status=400)
+
+        return FileResponse(task.result)
+
+    result = {
+        'status': 'error',
+        'message': 'unknown'
+    }
+    return JsonResponse(result, content_type='application/json', status=400)
+
+
+def task(request):
     result = dict()
     if not request.user.is_authenticated:
         result['message'] = 'need auth'
@@ -10,44 +59,80 @@ def list_view(request):
         return JsonResponse(result, content_type='application/json', status=403)
 
     if request.method == 'POST':
-        if 'time' in request.POST and 'name' in request.POST:
-            try:
-                val = int(request.POST['time'])
-                name = request.POST['name']
-                if val < 1 or val > 60:
-                    raise ValueError
-                task = Tasks.objects.create(name=name, time=val,
-                                            user=request.user,
-                                            state=Tasks.QUEUED)
-                task.save()
-                # execute_task.delay(task.pk)
-                result['correct_task_name'] = request.POST['name']
-                result['status'] = 'ok'
-            except ValueError:
-                result['incorrect_task_time'] = request.POST['time']
-                result['incorrect_task_name'] = request.POST['name']
-                result['status'] = 'error'
-        else:
-            result['message'] = 'field error'
+        try:
+            if 'name' not in request.POST:
+                raise ValueError
+            task = Tasks.objects.create(name=request.POST['name'],
+                                        description=request.POST.get("description", None),
+                                        user=request.user,
+                                        state=Tasks.QUEUED)
+            task.save()
+
+            if 'params' in request.POST:
+                for elem in request.POST['params']:
+                    f = None
+                    if 'file' in elem:
+                        f = elem['file']
+                    p = Params.objects.create(task=task,
+                                              args=elem['args'],
+                                              file=f)
+                    p.save()
+
+            # execute_task.delay(task.pk)
+
+            result['correct_task_name'] = request.POST['name']
+            result['status'] = 'ok'
+        except ValueError:
+            result['incorrect_task_time'] = request.POST['time']
+            result['incorrect_task_name'] = request.POST['name']
             result['status'] = 'error'
     else:
-        tasks_descr = list()
-        tasks = Tasks.objects.filter(user=request.user)
-        state_dict = {
-            Tasks.QUEUED: 'queued',
-            Tasks.IN_PROCESS: 'in progress',
-            Tasks.ERRORED: 'errored',
-            Tasks.FINISHED: 'finished',
-        }
-        for task in tasks:
-            tasks_descr.append({
-                'id': task.id,
-                'name': task.name,
-                'state': state_dict[task.state]
-            }
-            )
+        id = request.GET.get('id', None)
+        flag = False
+        task = None
+        if id is not None:
+            try:
+                id = int(id)
+                task = Tasks.objects.get(id=id)
+                flag = True
+            except :
+                pass
+        if flag and task:
+            result['task_state'] = task.state
+            result['name'] = task.name
+            result['description'] = task.description
+            result['log'] = task.log
+            result['start_time'] = task.accept_time
+            result['result'] = task.result.url
+            params = list()
+            for param in Params.objects.filter(task=task):
+                elem = {
+                    "args": param.args,
+                }
+                if param.file:
+                    elem['file'] = param.file.url
+                params.append(elem)
+            result['params'] = params
+            result['status'] = 'ok'
 
-        result['tasks'] = tasks_descr
-        result['status'] = 'ok'
+        else:
+            tasks_descr = list()
+            tasks = Tasks.objects.filter(user=request.user)
+            state_dict = {
+                Tasks.QUEUED: 'queued',
+                Tasks.IN_PROCESS: 'in progress',
+                Tasks.ERRORED: 'errored',
+                Tasks.FINISHED: 'finished',
+            }
+            for task in tasks:
+                tasks_descr.append({
+                    'id': task.id,
+                    'name': task.name,
+                    'state': state_dict[task.state]
+                }
+                )
+
+            result['tasks'] = tasks_descr
+            result['status'] = 'ok'
 
     return JsonResponse(result, content_type='application/json')

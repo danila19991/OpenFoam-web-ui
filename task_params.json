@@ -1,7 +1,36 @@
 [
   {
-    "name": "hello world",
-    "param_blocks": [
+    "name": "hello-world",
+    "main_params": [
+      {
+        "name": "name",
+        "type": "string"
+      }
+    ],
+    "must_file": false,
+    "add_param_blocks": [
+      {
+        "name": "base",
+        "params": [
+          {
+            "name": "name",
+            "type": "string"
+          }
+        ],
+        "need_file": true
+      }
+    ]
+  },
+    {
+    "name": "hello-world2",
+    "main_params": [
+      {
+        "name": "name",
+        "type": "string"
+      }
+    ],
+    "must_file": false,
+    "add_param_blocks": [
       {
         "name": "base",
         "params": [
@@ -14,4 +43,5 @@
       }
     ]
   }
+
 ]

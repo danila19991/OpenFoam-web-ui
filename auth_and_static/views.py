@@ -1,9 +1,10 @@
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.template import loader
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
+import json
 
 
 def register(request):
@@ -60,3 +61,11 @@ def index(request):
             return HttpResponseRedirect(reverse('auth_and_static:login'))
 
     return HttpResponse(template.render(context, request))
+
+
+def params(request):
+    with open('task_params.json') as f_in:
+        s = f_in.read()
+    j = json.loads(s)
+    j = {"params": j}
+    return JsonResponse(j)

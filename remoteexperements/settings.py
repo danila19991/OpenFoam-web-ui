@@ -157,4 +157,6 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+MEDIA_ROOT = BASE_DIR + '/data/'
+
 APPEND_SLASH = False

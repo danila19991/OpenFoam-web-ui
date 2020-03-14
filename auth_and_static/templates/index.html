@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script type="application/javascript" src="https://unpkg.com/react@16.0.0/umd/react.production.min.js"></script>
+    <script type="application/javascript" src="https://unpkg.com/react-dom@16.0.0/umd/react-dom.production.min.js"></script>
+    <script type="application/javascript" src="https://unpkg.com/babel-standalone@6.26.0/babel.js"></script>
+
     <title>Tasks</title>
 </head>
 <body>
@@ -31,7 +35,11 @@
     <p>{{ incorrect_task_n }} with time {{ incorrect_task_t }} was not accepted</p>
 {% endif %}
 
-<table id="task_list">
+<div id="root">
+
+</div>
+
+<table id="task_list" hidden>
 <tr><td>имя</td><td>состояние</td></tr>
 {% for task in tasks %}
     <tr>
@@ -48,6 +56,314 @@
 
     {% endfor %}
 {%  endif %}
+
+<script type="text/babel">
+const rootElement = document.getElementById('root');
+
+var epoch = 0;
+
+class ListElemet extends React.Component{
+  constructor(props){
+    super(props);
+    this.state = {
+        num:epoch,
+      error: null,
+      isLoaded: false,
+      items: []
+    };
+  }
+
+    componentDidMount() {
+      console.log("send ajax");
+      var base = this;
+      (function worker() {
+                    if(base.state.num == epoch)
+      $.ajax({
+
+            url: "api/task",
+            // dataType: "json", // Для использования JSON формата получаемых данных
+            method: "GET", // Что бы воспользоваться POST методом, меняем данную строку на POST
+            //data: {"id_product": id_product,"qty_product": qty_product},
+            success: function (data) {
+                console.log(data.status);
+                console.log(data);
+                if (data.status === "ok") {
+                    base.setState({
+                        isLoaded: true,
+                        items: data.tasks
+                    });
+                    console.log(this.state);
+                    {#render_tasks(data.tasks);#}
+                }
+                else{
+                    base.setState({
+                        isLoaded: true,
+                        error: result.message
+                    });
+
+                }
+
+
+                console.log(data); // Возвращаемые данные выводим в консоль
+            },
+            error: function (jqxhr, status, errorMsg) {
+                    base.setState({
+                        isLoaded: true,
+                        error: errorMsg
+                    });
+                console.log("error");
+                console.log(jqxhr); // Возвращаемые данные выводим в консоль
+                console.log(status); // Возвращаемые данные выводим в консоль
+                console.log(errorMsg); // Возвращаемые данные выводим в консоль
+            },
+                complete: function() {
+                // Schedule the next request when the current one's complete
+                        setTimeout(worker, 5000);
+                }
+            });
+      })();
+  }
+
+  render() {
+      const { error, isLoaded, items } = this.state;
+      if (!isLoaded){
+          return <div>Загрузка...</div>;
+      }
+      else{
+          return (
+              <table id="task_list">
+                <tr><td>имя</td><td>состояние</td></tr>
+                {items.map(item => (
+                  <tr key={item.id}>
+                      <td>{item.name}</td> <td>{item.state} </td>
+                  </tr>
+                ))}
+              </table>
+          );
+      }
+  }
+
+}
+
+class TextElemet extends React.Component{
+  constructor(props) {
+    super(props);
+    this.state = {value: ''};
+
+    this.handleChange = this.handleChange.bind(this);
+  }
+
+  handleChange(event) {
+    this.setState({value: event.target.value});
+  }
+
+  render() {
+        return (
+            <input type="text" value={this.state.value} onChange={this.handleChange}/>
+        );
+    }
+}
+
+class ParmersElement extends React.Component{
+    constructor(props){
+    super(props);
+    this.state = {
+        num:epoch,
+      error: null,
+      isLoaded: false,
+      descr: null
+    };
+  }
+
+    render() {
+        console.log(this.props);
+        return (
+            <div>
+                {this.props.args.main_params.map((elem) => <span>{elem.name}<TextElemet /></span>)}
+                {this.props.args.name}
+            </div>
+        );
+    }
+}
+
+class CreateElemet extends React.Component{
+    constructor(props){
+    super(props);
+    this.state = {
+        num:epoch,
+      error: null,
+      isLoaded: false,
+      descr: null,
+        value: null
+    };
+  }
+
+    componentDidMount() {
+      console.log("send ajax");
+      var base = this;
+      (function worker() {
+                    if(base.state.num == epoch)
+      $.ajax({
+            url: "params/",
+            // dataType: "json", // Для использования JSON формата получаемых данных
+            method: "GET", // Что бы воспользоваться POST методом, меняем данную строку на POST
+            //data: {"id_product": id_product,"qty_product": qty_product},
+            success: function (data) {
+                console.log(data.status);
+                console.log(data);
+                    base.setState({
+                        isLoaded: true,
+                        descr: data.params,
+                        value:data.params[0].name
+                    });
+            },
+            error: function (jqxhr, status, errorMsg) {
+                    base.setState({
+                        isLoaded: true,
+                        error: errorMsg
+                    });
+                console.log("error");
+                console.log(jqxhr); // Возвращаемые данные выводим в консоль
+                console.log(status); // Возвращаемые данные выводим в консоль
+                console.log(errorMsg); // Возвращаемые данные выводим в консоль
+            },
+                {#complete: function() {#}
+                {#// Schedule the next request when the current one's complete#}
+                {#        setTimeout(worker, 5000);#}
+                {# }#}
+            });
+      })();
+  }
+/*
+  switchType(){
+        var elem = document.getElementById('task_type');
+        {#console.log(#}
+        {#document.getElementById('task_type'));#}
+        console.log(elem.selectedIndex);
+  }//*/
+  handleChange(event) {
+      var vbase = this;
+        console.log(event);
+        console.log(event.target);
+        console.log(event.target.value);
+    vbase.setState({value: event.target.value});
+  }
+
+  render() {
+      const { error, isLoaded, descr } = this.state;
+      console.log(descr);
+      if (!isLoaded){
+          return <div>Загрузка...</div>;
+      }
+      else{
+          var loc_data = null;
+      descr.forEach((elem) => {
+          if(elem.name == this.state.value)
+            loc_data = elem;
+      });
+          return (
+              <div>
+                  <select value={this.state.value} onChange={(event) => this.handleChange(event)}>
+                      {descr.map(elem => <option value={elem.name}>{elem.name}</option>)}
+                  </select>
+
+                    <div id="specila_params">
+
+                        <ParmersElement args={loc_data}/>
+                    </div>
+              </div>
+          );
+      }
+  }
+
+}
+
+class TaskElemet extends React.Component{
+  constructor(props){
+    super(props);
+  }
+
+  render() {
+    if(this.props.name){
+      return (
+          <span id="res">
+            привет {this.props.name}
+          </span>
+        );
+    }
+    else{
+        return (
+          <span hidden>
+            тут будет приветсвие
+          </span>
+        );
+    }
+  }
+
+}
+
+class MainElement extends React.Component {
+  constructor(props) {
+    super(props);
+      this.state = {
+        action: "list"
+      };
+  }
+
+  toList(){
+      ++epoch;
+    const element = (
+            <div id="main_tasks">
+                <a onClick={() => this.toCreate()}> новая задача </a>
+              <ListElemet/>
+            </div>
+        );
+    ReactDOM.render(element, document.getElementById('root'));
+  }
+
+  toCreate(){
+      ++epoch;
+    const element = (
+            <div id="main_tasks">
+                <a onClick={() => this.toList()}> назад </a>
+              <CreateElemet/>
+            </div>
+        );
+    ReactDOM.render(element, document.getElementById('root'));
+  }
+
+  toTask(id){
+      ++epoch;
+    const element = (
+            <div id="main_tasks">
+                <a onClick={() => this.toList()}> назад </a>
+              <TaskElemet value={id}/>
+            </div>
+        );
+    ReactDOM.render(element, document.getElementById('root'));
+  }
+
+    render() {
+        return (
+            <div id="main_tasks">
+                <a onClick={() => this.toCreate()}> новая задача </a>
+              <ListElemet/>
+            </div>
+        );
+    }
+}
+
+function App(){
+  return(
+        <MainElement title="React Stranger Things"/>
+  )
+}
+
+ReactDOM.render(
+    <App />,
+    rootElement
+)
+</script>
 
 <script>
 
@@ -122,7 +438,7 @@ update_table();
 });
 
 $(document).ready(update_table());
-var intervalID = setInterval(update_table, 5000);
+{#var intervalID = setInterval(update_table, 5000);#}
 </script>
 
 </body>
