@@ -20,8 +20,10 @@
     <input type="submit" name="exit" value="exit">
 </form>
 
-<form id="new_task"  method="post">
+<form id="new_task_old"  method="post">
+    <div id="django_scrf_token">
     {% csrf_token %}
+        </div>
     <input type="text" name="name" placeholder="name">
     <input type="text" name="time" placeholder="10">
     <input type="submit" name="submit" value="submit">
@@ -80,7 +82,7 @@ class ListElemet extends React.Component{
                     if(base.state.num == epoch)
       $.ajax({
 
-            url: "api/task",
+            url: "api/task/",
             // dataType: "json", // Для использования JSON формата получаемых данных
             method: "GET", // Что бы воспользоваться POST методом, меняем данную строку на POST
             //data: {"id_product": id_product,"qty_product": qty_product},
@@ -159,7 +161,7 @@ class TextElemet extends React.Component{
 
   render() {
         return (
-            <input type="text" value={this.state.value} onChange={this.handleChange}/>
+            <input type="text" name={this.props.name} value={this.state.value} onChange={this.handleChange}/>
         );
     }
 }
@@ -177,9 +179,43 @@ class ParmersElement extends React.Component{
 
     render() {
         console.log(this.props);
+        console.log(this.props.args.params);
+        let file;
+        if(this.props.args.need_file){
+            file = "тут будет файл";
+        }
         return (
             <div>
-                {this.props.args.main_params.map((elem) => <span>{elem.name}<TextElemet /></span>)}
+                {this.props.args.params.map((elem) => <span>{elem.name}<TextElemet name={elem.name}/></span>)}
+                {file}
+                {this.props.args.name}
+            </div>
+        );
+    }
+}
+
+class AdditionParamsElement extends React.Component{
+    constructor(props){
+    super(props);
+    this.state = {
+        num:epoch,
+      error: null,
+      isLoaded: false,
+      descr: null
+    };
+  }
+
+    render() {
+        console.log(this.props);
+        console.log(this.props.args.params);
+        let file;
+        if(this.props.args.need_file){
+            file = "тут будет файл";
+        }
+        return (
+            <div>
+                {this.props.args.params.map((elem) => <span>{elem.name}<TextElemet /></span>)}
+                {file}
                 {this.props.args.name}
             </div>
         );
@@ -227,20 +263,50 @@ class CreateElemet extends React.Component{
                 console.log(status); // Возвращаемые данные выводим в консоль
                 console.log(errorMsg); // Возвращаемые данные выводим в консоль
             },
-                {#complete: function() {#}
-                {#// Schedule the next request when the current one's complete#}
-                {#        setTimeout(worker, 5000);#}
-                {# }#}
             });
       })();
   }
-/*
-  switchType(){
-        var elem = document.getElementById('task_type');
-        {#console.log(#}
-        {#document.getElementById('task_type'));#}
-        console.log(elem.selectedIndex);
-  }//*/
+
+  handleSubmit(event){
+            console.log(event);
+    var data = $('#new_task').serializeArray().reduce(function(obj, item) {
+    obj[item.name] = item.value;
+    return obj;
+}, {});
+    // csrfmiddlewaretoken
+      $('#new_task_old').serializeArray().forEach(function(item) {
+          if(item.name == "csrfmiddlewaretoken")
+            data[item.name] = item.value;
+        });
+
+
+    console.log(data);
+
+    var base = this;
+
+        $.ajax({
+
+      url: "api/task/",
+     dataType: "json", // Для использования JSON формата получаемых данных
+       	method: "POST", // Что бы воспользоваться POST методом, меняем данную строку на POST
+    	data: data,
+       	success: function(data) {
+//update_table();
+            console.log(base.props);
+base.props.parent.toList();
+ 		console.log(data); // Возвращаемые данные выводим в консоль
+       },
+       error: function(jqxhr, status, errorMsg) {
+        console.log("error");
+ 		console.log(jqxhr); // Возвращаемые данные выводим в консоль
+ 		console.log(status); // Возвращаемые данные выводим в консоль
+ 		console.log(errorMsg); // Возвращаемые данные выводим в консоль
+       }
+ });
+//  alert( "Handler for .submit() called." );
+  event.preventDefault();
+  }
+
   handleChange(event) {
       var vbase = this;
         console.log(event);
@@ -261,16 +327,22 @@ class CreateElemet extends React.Component{
           if(elem.name == this.state.value)
             loc_data = elem;
       });
+      //var csrf = document.getElementById("django_scrf_token");
+      //console.log(csrf);
           return (
               <div>
-                  <select value={this.state.value} onChange={(event) => this.handleChange(event)}>
+                  <form id="new_task" onSubmit={(event) => this.handleSubmit(event)}>
+        {#//              {csrf}#}
+                  <select value={this.state.value} name="task_type" onChange={(event) => this.handleChange(event)}>
                       {descr.map(elem => <option value={elem.name}>{elem.name}</option>)}
                   </select>
 
-                    <div id="specila_params">
+                        <ParmersElement args={loc_data.main_params}/>
+                    <div id="special_params">
 
-                        <ParmersElement args={loc_data}/>
                     </div>
+                      <input type="submit"/>
+                  </form>
               </div>
           );
       }
@@ -326,7 +398,7 @@ class MainElement extends React.Component {
     const element = (
             <div id="main_tasks">
                 <a onClick={() => this.toList()}> назад </a>
-              <CreateElemet/>
+              <CreateElemet  parent={this}/>
             </div>
         );
     ReactDOM.render(element, document.getElementById('root'));
@@ -408,7 +480,7 @@ function update_table() {
 
 }
 
-$( "#new_task" ).submit(function( event ) {
+$( "#new_task_old" ).submit(function( event ) {
     console.log(event);
     var data = $('#new_task').serializeArray().reduce(function(obj, item) {
     obj[item.name] = item.value;
