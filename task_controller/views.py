@@ -1,6 +1,13 @@
 from django.http import HttpResponse, JsonResponse, FileResponse
 from .models import Tasks, Params
 
+state_dict = {
+    Tasks.QUEUED: 'queued',
+    Tasks.IN_PROCESS: 'in progress',
+    Tasks.ERRORED: 'errored',
+    Tasks.FINISHED: 'finished',
+}
+
 
 def result(request):
     if not request.user.is_authenticated:
@@ -98,12 +105,17 @@ def task(request):
             except :
                 pass
         if flag and task:
-            result['task_state'] = task.state
-            result['name'] = task.name
-            result['description'] = task.description
-            result['log'] = task.log
-            result['start_time'] = task.accept_time
-            result['result'] = task.result.url
+            result["info"] = {
+                'task_state': state_dict[task.state],
+                'name': task.name,
+                'description': task.description,
+                'start_time': task.accept_time,
+            }
+            if task.result:
+                result['result'] = {
+                    "file":task.result.url,
+                    "log": task.log,
+                }
             params = list()
             for param in Params.objects.filter(task=task):
                 elem = {
@@ -118,12 +130,6 @@ def task(request):
         else:
             tasks_descr = list()
             tasks = Tasks.objects.filter(user=request.user)
-            state_dict = {
-                Tasks.QUEUED: 'queued',
-                Tasks.IN_PROCESS: 'in progress',
-                Tasks.ERRORED: 'errored',
-                Tasks.FINISHED: 'finished',
-            }
             for task in tasks:
                 tasks_descr.append({
                     'id': task.id,
