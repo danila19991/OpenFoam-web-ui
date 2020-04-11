@@ -20,8 +20,13 @@
     <input type="submit" name="exit" value="exit">
 </form>
 
-<form id="new_task_old"  method="post" hidden>
-    <div id="django_scrf_token">
+<form id="new_task_old_post"  method="post" hidden>
+    <div id="django_scrf_token_post">
+        {% csrf_token %}
+    </div>
+</form>
+<form id="new_task_old"  method="delete" hidden>
+    <div id="django_scrf_token_del">
         {% csrf_token %}
     </div>
 </form>
@@ -31,9 +36,41 @@
 </div>
 
 <script type="text/babel">
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
 const rootElement = document.getElementById('root');
 
 var epoch = 0;
+
+class InvisibleElement extends React.Component{
+    constructor(props) {
+        super(props);
+    }
+
+    render() {
+        if (this.props.message){
+            return <div>{this.props.message}</div>;
+        }
+        else{
+            return <div hidden>{this.props.message}</div>;
+        }
+    }
+
+}
 
 class ListElemet extends React.Component{
     constructor(props){
@@ -42,7 +79,8 @@ class ListElemet extends React.Component{
             num:epoch,
             error: null,
             isLoaded: false,
-            items: []
+            items: [],
+            del_error: null,
         };
     }
 
@@ -60,7 +98,7 @@ class ListElemet extends React.Component{
                         if (data.status === "ok") {
                             base.setState({
                                 isLoaded: true,
-                                items: data.tasks
+                                items: data.tasks,
                             });
                         } else {
                             base.setState({
@@ -86,6 +124,76 @@ class ListElemet extends React.Component{
         })();
     }
 
+    del_task(id){
+        var data = Object();
+        data["id"] = id;
+        $('#new_task_old_post').serializeArray().forEach(function(item) {
+            if(item.name == "csrfmiddlewaretoken")
+                data[item.name] = item.value;
+        });
+        console.log(data);
+        var base = this;
+        $.ajax({
+            url: "api/task/",
+            dataType: "json", // Для использования JSON формата получаемых данных
+            method: "DELETE", // Что бы воспользоваться POST методом, меняем данную строку на POST
+            data: data,
+            beforeSend: function(xhr) {
+                xhr.setRequestHeader("X-CSRFToken", getCookie("csrftoken"));
+            },
+            success: function (data) {
+                console.log(data);
+                console.log(data.state);
+                console.log(data.message);
+                if(data.state === "ok"){
+                    console.log(base.state);
+                    var tasks = base.state.items;
+                    var i;
+                    console.log(tasks);
+                    for(i=0; i<tasks.length; ++i){
+                        if(tasks[i].id == id){
+                            break;
+                        }
+                    }
+                    tasks.splice(i, 1);
+                    console.log(i);
+                    console.log(tasks);
+                    base.setState({
+                        items: tasks,
+                        del_error: null
+                    });
+                }
+                else{
+                    base.setState({
+                        del_error: data.message
+                    });
+                }
+                {#if (data.status === "ok") {#}
+                {#    base.setState({#}
+                {#        isLoaded: true,#}
+                {#        items: data.tasks#}
+                {#    });#}
+                {# } else {#}
+                {#    base.setState({#}
+                {#        isLoaded: true,#}
+                {#        error: result.message#}
+                {#    });#}
+                {# }#}
+            },
+            error: function (jqxhr, status, errorMsg) {
+                {#base.setState({#}
+                {#    isLoaded: true,#}
+                {#    error: errorMsg#}
+                {# });#}
+                {#console.log("error");#}
+                {#console.log(errorMsg); // Возвращаемые данные выводим в консоль#}
+                base.setState({
+                    del_error: errorMsg
+                });
+            }
+        });
+    }
+
     render() {
         const { error, isLoaded, items } = this.state;
         if (!isLoaded){
@@ -93,19 +201,27 @@ class ListElemet extends React.Component{
         }
         else{
             return (
-                <table id="task_list">
-                    <tr><td>имя</td><td>состояние</td></tr>
-                    {items.map(item => (
-                        <tr key={item.id}>
-                            <td>
-                                <a onClick={() => this.props.parent.toTask(item.id)}>
-                                    {item.name}
-                                </a>
-                            </td>
-                            <td>{item.state} </td>
-                        </tr>
-                    ))}
-                </table>
+                <div>
+                    <table id="task_list">
+                        <tr><td>имя</td><td>состояние</td></tr>
+                        {items.map(item => (
+                            <tr key={item.id}>
+                                <td>
+                                    <a onClick={() => this.props.parent.toTask(item.id)}>
+                                        {item.name}
+                                    </a>
+                                </td>
+                                <td>{item.state} </td>
+                                <td>
+                                    <a onClick={() => this.del_task(item.id)}>
+                                        del
+                                    </a>
+                                </td>
+                            </tr>
+                        ))}
+                    </table>
+                    <InvisibleElement message={this.state.del_error}/>
+                </div>
             );
         }
     }
@@ -228,11 +344,11 @@ class CreateElemet extends React.Component{
             return obj;
         }, {});
         // csrfmiddlewaretoken
-        $('#new_task_old').serializeArray().forEach(function(item) {
+        $('#new_task_old_post').serializeArray().forEach(function(item) {
             if(item.name == "csrfmiddlewaretoken")
                 data[item.name] = item.value;
         });
-
+        console.log(data);
         var base = this;
         $.ajax({
             url: "api/task/",

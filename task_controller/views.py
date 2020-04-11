@@ -72,7 +72,7 @@ def task(request):
             task = Tasks.objects.create(name=request.POST['name'],
                                         description=request.POST.get("description", None),
                                         user=request.user,
-                                        state=Tasks.QUEUED)
+                                        state=Tasks.FINISHED)
             task.save()
 
             if 'params' in request.POST:
@@ -93,6 +93,32 @@ def task(request):
             result['incorrect_task_time'] = request.POST['time']
             result['incorrect_task_name'] = request.POST['name']
             result['status'] = 'error'
+    elif request.method == 'DELETE':
+        request.method = "POST"
+        request._load_post_and_files()
+        request.method = "DELETE"
+        id = request.POST.get('id', None)
+        flag = False
+        task = None
+        if id is not None:
+            try:
+                id = int(id)
+                task = Tasks.objects.get(id=id)
+                if task.user != request.user:
+                    result['message'] = 'incorrect user'
+                    result['status'] = 'error'
+                    return JsonResponse(result,
+                                        content_type='application/json',
+                                        status=403)
+                flag = True
+            except :
+                pass
+        if flag and task:
+            task.delete()
+            result['state'] = 'ok'
+        else:
+            result['message'] = 'incorrect task'
+            result['status'] = 'error'
     else:
         id = request.GET.get('id', None)
         flag = False
@@ -101,6 +127,12 @@ def task(request):
             try:
                 id = int(id)
                 task = Tasks.objects.get(id=id)
+                if task.user != request.user:
+                    result['message'] = 'incorrect user'
+                    result['status'] = 'error'
+                    return JsonResponse(result,
+                                        content_type='application/json',
+                                        status=403)
                 flag = True
             except :
                 pass
