@@ -21,6 +21,8 @@ before_script:
   - python3 manage.py migrate
 # command to install dependencies
 install:
+  - virtualenv venv --distribute
+  - source venv/bin/activate
   - pip install -r requirements.txt
 # command to run tests
 script:
