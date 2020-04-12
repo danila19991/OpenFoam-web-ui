@@ -4,3 +4,4 @@ pytest-django==3.4.3
 psycopg2-binary==2.8.4
 celery==4.3.0
 django-celery==3.3.1
+coverage==5.0.3

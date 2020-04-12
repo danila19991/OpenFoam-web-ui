@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script type="application/javascript" src="https://unpkg.com/react@16.0.0/umd/react.production.min.js"></script>
+    <script type="application/javascript" src="https://unpkg.com/react-dom@16.0.0/umd/react-dom.production.min.js"></script>
+    <script type="application/javascript" src="https://unpkg.com/babel-standalone@6.26.0/babel.js"></script>
+
     <title>Tasks</title>
 </head>
 <body>
@@ -16,113 +20,539 @@
     <input type="submit" name="exit" value="exit">
 </form>
 
-<form id="new_task"  method="post">
-    {% csrf_token %}
-    <input type="text" name="name" placeholder="name">
-    <input type="text" name="time" placeholder="10">
-    <input type="submit" name="submit" value="submit">
+<form id="new_task_old_post"  method="post" hidden>
+    <div id="django_scrf_token_post">
+        {% csrf_token %}
+    </div>
+</form>
+<form id="new_task_old"  method="delete" hidden>
+    <div id="django_scrf_token_del">
+        {% csrf_token %}
+    </div>
 </form>
 
-{% if correct_task %}
-    <p>{{ correct_task }} was accepted</p>
-{% endif %}
+<div id="root">
 
-{% if incorrect_task_t and incorrect_task_n %}
-    <p>{{ incorrect_task_n }} with time {{ incorrect_task_t }} was not accepted</p>
-{% endif %}
+</div>
 
-<table id="task_list">
-<tr><td>имя</td><td>состояние</td></tr>
-{% for task in tasks %}
-    <tr>
-        {% for elem in task %}
-            <td>{{ elem }}</td>
-        {% endfor %}
-    </tr>
-{% endfor %}
-</table>
-
-{% if any_data %}
-    {% for data in any_data %}
-        <p>{{ data }}</p>
-
-    {% endfor %}
-{%  endif %}
-
-<script>
-
-function render_tasks(tasks){
-    var result = "<tr><td>имя</td><td>состояние</td></tr>";
-
-    tasks.forEach(function (entry) {
-        result += "<tr><td>" + entry.name + "</td><td>" + entry.state + "</td></tr>";
-    });
-
-    console.log(result);
-
-    $( "#task_list" ).html(result);
+<script type="text/babel">
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
 }
-function update_table() {
 
-        let id_product = 321;
-        let qty_product = 2;
+const rootElement = document.getElementById('root');
 
+var epoch = 0;
+
+class InvisibleElement extends React.Component{
+    constructor(props) {
+        super(props);
+    }
+
+    render() {
+        if (this.props.message){
+            return <div>{this.props.message}</div>;
+        }
+        else{
+            return <div hidden>{this.props.message}</div>;
+        }
+    }
+
+}
+
+class ListElemet extends React.Component{
+    constructor(props){
+        super(props);
+        this.state = {
+            num:epoch,
+            error: null,
+            isLoaded: false,
+            items: [],
+            del_error: null,
+        };
+    }
+
+    componentDidMount() {
+        var base = this;
+        (function worker() {
+            if (base.state.num == epoch) {
+                console.log("send ajax");
+                $.ajax({
+                    url: "api/task/",
+                    // dataType: "json", // Для использования JSON формата получаемых данных
+                    method: "GET", // Что бы воспользоваться POST методом, меняем данную строку на POST
+                    //data: {"id_product": id_product,"qty_product": qty_product},
+                    success: function (data) {
+                        if (data.status === "ok") {
+                            base.setState({
+                                isLoaded: true,
+                                items: data.tasks,
+                            });
+                        } else {
+                            base.setState({
+                                isLoaded: true,
+                                error: result.message
+                            });
+                        }
+                    },
+                    error: function (jqxhr, status, errorMsg) {
+                        base.setState({
+                            isLoaded: true,
+                            error: errorMsg
+                        });
+                        console.log("error");
+                        console.log(errorMsg); // Возвращаемые данные выводим в консоль
+                    },
+                    complete: function () {
+                        // Schedule the next request when the current one's complete
+                        setTimeout(worker, 5000);
+                    }
+                });
+            }
+        })();
+    }
+
+    del_task(id){
+        var data = Object();
+        data["id"] = id;
+        $('#new_task_old_post').serializeArray().forEach(function(item) {
+            if(item.name == "csrfmiddlewaretoken")
+                data[item.name] = item.value;
+        });
+        console.log(data);
+        var base = this;
         $.ajax({
-
-            url: "api/task",
-            // dataType: "json", // Для использования JSON формата получаемых данных
-            method: "GET", // Что бы воспользоваться POST методом, меняем данную строку на POST
-            //data: {"id_product": id_product,"qty_product": qty_product},
+            url: "api/task/",
+            dataType: "json", // Для использования JSON формата получаемых данных
+            method: "DELETE", // Что бы воспользоваться POST методом, меняем данную строку на POST
+            data: data,
+            beforeSend: function(xhr) {
+                xhr.setRequestHeader("X-CSRFToken", getCookie("csrftoken"));
+            },
             success: function (data) {
-                console.log(data.status);
-                if (data.status === "ok") {
-                    render_tasks(data.tasks);
+                console.log(data);
+                console.log(data.state);
+                console.log(data.message);
+                if(data.state === "ok"){
+                    console.log(base.state);
+                    var tasks = base.state.items;
+                    var i;
+                    console.log(tasks);
+                    for(i=0; i<tasks.length; ++i){
+                        if(tasks[i].id == id){
+                            break;
+                        }
+                    }
+                    tasks.splice(i, 1);
+                    console.log(i);
+                    console.log(tasks);
+                    base.setState({
+                        items: tasks,
+                        del_error: null
+                    });
                 }
-
-
-                console.log(data); // Возвращаемые данные выводим в консоль
+                else{
+                    base.setState({
+                        del_error: data.message
+                    });
+                }
+                {#if (data.status === "ok") {#}
+                {#    base.setState({#}
+                {#        isLoaded: true,#}
+                {#        items: data.tasks#}
+                {#    });#}
+                {# } else {#}
+                {#    base.setState({#}
+                {#        isLoaded: true,#}
+                {#        error: result.message#}
+                {#    });#}
+                {# }#}
             },
             error: function (jqxhr, status, errorMsg) {
+                {#base.setState({#}
+                {#    isLoaded: true,#}
+                {#    error: errorMsg#}
+                {# });#}
+                {#console.log("error");#}
+                {#console.log(errorMsg); // Возвращаемые данные выводим в консоль#}
+                base.setState({
+                    del_error: errorMsg
+                });
+            }
+        });
+    }
+
+    render() {
+        const { error, isLoaded, items } = this.state;
+        if (!isLoaded){
+            return <div>Загрузка...</div>;
+        }
+        else{
+            return (
+                <div>
+                    <table id="task_list">
+                        <tr><td>имя</td><td>состояние</td></tr>
+                        {items.map(item => (
+                            <tr key={item.id}>
+                                <td>
+                                    <a onClick={() => this.props.parent.toTask(item.id)}>
+                                        {item.name}
+                                    </a>
+                                </td>
+                                <td>{item.state} </td>
+                                <td>
+                                    <a onClick={() => this.del_task(item.id)}>
+                                        del
+                                    </a>
+                                </td>
+                            </tr>
+                        ))}
+                    </table>
+                    <InvisibleElement message={this.state.del_error}/>
+                </div>
+            );
+        }
+    }
+}
+
+class TextElemet extends React.Component{
+    constructor(props) {
+        super(props);
+        this.state = {value: ''};
+        this.handleChange = this.handleChange.bind(this);
+    }
+
+    handleChange(event) {
+        this.setState({value: event.target.value});
+    }
+
+    render() {
+        return (
+            <input type="text" name={this.props.name} value={this.state.value} onChange={this.handleChange}/>
+        );
+    }
+}
+
+class ParmersElement extends React.Component{
+    constructor(props){
+        super(props);
+        this.state = {
+            num:epoch,
+            error: null,
+            isLoaded: false,
+            descr: null
+        };
+    }
+
+    render() {
+        let file;
+        if(this.props.args.need_file){
+            file = "тут будет файл";
+        }
+        return (
+            <div>
+                {this.props.args.params.map((elem) => <span>{elem.name}<TextElemet name={elem.name}/></span>)}
+                {file}
+                {this.props.args.name}
+            </div>
+        );
+    }
+}
+
+class AdditionParamsElement extends React.Component{
+    constructor(props){
+        super(props);
+        this.state = {
+            num:epoch,
+            error: null,
+            isLoaded: false,
+            descr: null
+        };
+    }
+
+    render() {
+        let file;
+        if(this.props.args.need_file){
+            file = "тут будет файл";
+        }
+        return (
+            <div>
+                {this.props.args.params.map((elem) => <span>{elem.name}<TextElemet /></span>)}
+                {file}
+                {this.props.args.name}
+            </div>
+        );
+    }
+}
+
+class CreateElemet extends React.Component{
+    constructor(props){
+        super(props);
+        this.state = {
+            num:epoch,
+            error: null,
+            isLoaded: false,
+            descr: null,
+            value: null
+        };
+    }
+
+    componentDidMount() {
+        var base = this;
+        (function worker() {
+            if(base.state.num == epoch){
+                $.ajax({
+                    url: "params/",
+                    // dataType: "json", // Для использования JSON формата получаемых данных
+                    method: "GET", // Что бы воспользоваться POST методом, меняем данную строку на POST
+                    //data: {"id_product": id_product,"qty_product": qty_product},
+                    success: function (data) {
+                        base.setState({
+                            isLoaded: true,
+                            descr: data.params,
+                            value:data.params[0].name
+                        });
+                    },
+                    error: function (jqxhr, status, errorMsg) {
+                        base.setState({
+                            isLoaded: true,
+                            error: errorMsg
+                        });
+                        console.log("error");
+                        console.log(errorMsg); // Возвращаемые данные выводим в консоль
+                    },
+                });
+            }
+        })();
+    }
+
+    handleSubmit(event){
+        var data = $('#new_task').serializeArray().reduce(function(obj, item) {
+            obj[item.name] = item.value;
+            return obj;
+        }, {});
+        // csrfmiddlewaretoken
+        $('#new_task_old_post').serializeArray().forEach(function(item) {
+            if(item.name == "csrfmiddlewaretoken")
+                data[item.name] = item.value;
+        });
+        console.log(data);
+        var base = this;
+        $.ajax({
+            url: "api/task/",
+            dataType: "json", // Для использования JSON формата получаемых данных
+       	    method: "POST", // Что бы воспользоваться POST методом, меняем данную строку на POST
+    	    data: data,
+       	    success: function(data) {
+                base.props.parent.toList();
+            },
+            error: function(jqxhr, status, errorMsg) {
                 console.log("error");
-                console.log(jqxhr); // Возвращаемые данные выводим в консоль
-                console.log(status); // Возвращаемые данные выводим в консоль
                 console.log(errorMsg); // Возвращаемые данные выводим в консоль
             }
         });
+        event.preventDefault();
+    }
 
+    handleChange(event) {
+        var vbase = this;
+        vbase.setState({value: event.target.value});
+    }
+
+    render() {
+        const { error, isLoaded, descr } = this.state;
+        if (!isLoaded){
+            return <div>Загрузка...</div>;
+        }
+        else{
+            var loc_data = null;
+            descr.forEach((elem) => {
+                if(elem.name == this.state.value)
+                    loc_data = elem;
+            });
+            return (
+                <div>
+                    <form id="new_task" onSubmit={(event) => this.handleSubmit(event)}>
+                        <select value={this.state.value} name="task_type" onChange={(event) => this.handleChange(event)}>
+                            {descr.map(elem => <option value={elem.name}>{elem.name}</option>)}
+                        </select>
+                        <ParmersElement args={loc_data.main_params}/>
+                        <div id="special_params">
+
+                        </div>
+                        <input type="submit"/>
+                  </form>
+              </div>
+            );
+        }
+    }
 }
 
-$( "#new_task" ).submit(function( event ) {
-    console.log(event);
-    var data = $('#new_task').serializeArray().reduce(function(obj, item) {
-    obj[item.name] = item.value;
-    return obj;
-}, {});
-    console.log(data);
+class TaskElemet extends React.Component{
+    constructor(props){
+        super(props);
+        this.state = {
+            num:epoch,
+            error: null,
+            isLoaded: false,
+            info: null,
+            params: null,
+            result: null
+        };
+    }
 
-        $.ajax({
+    componentDidMount() {
+        var base = this;
+        (function worker() {
+            if (base.state.num == epoch) {
+                $.ajax({
+                    url: "api/task/",
+                    dataType: "json", // Для использования JSON формата получаемых данных
+                    method: "GET", // Что бы воспользоваться POST методом, меняем данную строку на POST
+                    data: {
+                        "id": base.props.value,
+                    },
+                    success: function (data) {
+                        base.setState({
+                            isLoaded: true,
+                            info: data.info,
+                            params: data.params,
+                            result: data.result,
+                        });
+                    },
+                    error: function (jqxhr, status, errorMsg) {
+                        base.setState({
+                            isLoaded: true,
+                            error: errorMsg
+                        });
+                        console.log("error");
+                        console.log(errorMsg); // Возвращаемые данные выводим в консоль
+                        setTimeout(worker, 5000);
+                    },
+                });
+            }
+        })();
+    }
 
-      url: "api/task/",
-     dataType: "json", // Для использования JSON формата получаемых данных
-       	method: "POST", // Что бы воспользоваться POST методом, меняем данную строку на POST
-    	data: data,
-       	success: function(data) {
-update_table();
- 		console.log(data); // Возвращаемые данные выводим в консоль
-       },
-       error: function(jqxhr, status, errorMsg) {
-        console.log("error");
- 		console.log(jqxhr); // Возвращаемые данные выводим в консоль
- 		console.log(status); // Возвращаемые данные выводим в консоль
- 		console.log(errorMsg); // Возвращаемые данные выводим в консоль
-       }
- });
-//  alert( "Handler for .submit() called." );
-  event.preventDefault();
-});
+    render() {
+        if(this.state.isLoaded){
+            if(this.state.error){
+                return (
+                    <div id="res">
+                       возникла ошибка мы пытаемся их решить
+                    </div>
+                );
+            }
+            else {
+                return (
+                    <div id="res">
+                       следующая информаиця:
+                        <table id="task_list">
+                            <tr><td>параметр</td><td>значение</td></tr>
+                            {Object.keys(this.state.info).map((key, index) => (
+                                <tr>
+                                    <td>{key}</td><td>{this.state.info[key]} </td>
+                                </tr>
+                            ))}
+                        </table>
+                    </div>
+                );
+            }
+        }
+        else{
+            return (
+                <span>
+                    Загружаем дополнительную информацию
+                </span>
+            );
+        }
+    }
+}
 
-$(document).ready(update_table());
-var intervalID = setInterval(update_table, 5000);
+class MainElement extends React.Component {
+    constructor(props) {
+        super(props);
+        //action: 1 - list, 2 - create, 3 - task
+        this.state = {
+            action: 1,
+            task_id: null
+        };
+    }
+
+    toList(){
+        ++epoch;
+        this.setState({
+            action: 1,
+            task_id: null,
+        })
+    }
+
+    toCreate(){
+        ++epoch;
+        this.setState({
+            action: 2,
+            task_id: null,
+        })
+    }
+
+    toTask(id){
+        ++epoch;
+        this.setState({
+            action: 3,
+            task_id: id,
+        })
+    }
+
+    render() {
+        if(this.state.action == 1) {
+            return (
+                <div id="main_tasks">
+                    <a onClick={() => this.toCreate()}> новая задача </a>
+                    <ListElemet parent={this}/>
+                </div>
+            );
+        }
+        else if(this.state.action == 2){
+            return (
+                <div id="main_tasks">
+                    <a onClick={() => this.toList()}> назад </a>
+                    <CreateElemet  parent={this}/>
+                </div>
+            );
+        }
+        else if(this.state.action == 3){
+            return (
+                <div id="main_tasks">
+                    <a onClick={() => this.toList()}> назад </a>
+                    <TaskElemet value={this.state.task_id}/>
+                </div>
+            );
+        }
+    }
+}
+
+function App(){
+  return(
+      <MainElement title="React Stranger Things"/>
+  )
+}
+
+ReactDOM.render(
+    <App />,
+    rootElement
+)
 </script>
 
 </body>
