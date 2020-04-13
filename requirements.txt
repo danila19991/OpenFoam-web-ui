@@ -5,3 +5,4 @@ psycopg2-binary==2.8.4
 celery==4.3.0
 django-celery==3.3.1
 coverage==5.0.3
+codecov==2.0.22

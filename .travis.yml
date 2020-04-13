@@ -31,4 +31,4 @@ script:
 after_script:
   - docker-compose down
 after_success:
-  - codecov -t 029a6193-db20-4e43-b6b5-ee39982a7528
+  - codecov -t $CODECOV_TOKEN
