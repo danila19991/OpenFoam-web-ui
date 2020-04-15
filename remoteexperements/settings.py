@@ -112,11 +112,11 @@ DATABASES = {
 # }
 ###########################################################################################################3
 
-BROKER_HOST = queue_host
-BROKER_PORT = 5672
-BROKER_USER = "guest"
-BROKER_PASSWORD = "guest"
-BROKER_VHOST = "my_vhost"
+CELERY_BROKER_HOST = queue_host
+CELERY_BROKER_PORT = 5672
+CELERY_BROKER_USER = "guest"
+CELERY_BROKER_PASSWORD = "guest"
+CELERY_BROKER_VHOST = "my_vhost"
 
 
 # Password validation

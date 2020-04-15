@@ -1,5 +1,6 @@
 from django.http import HttpResponse, JsonResponse, FileResponse
 from .models import Tasks, Params
+from task_controller.tasks import execute_task
 
 state_dict = {
     Tasks.QUEUED: 'queued',
@@ -72,7 +73,7 @@ def task(request):
             task = Tasks.objects.create(name=request.POST['name'],
                                         description=request.POST.get("description", None),
                                         user=request.user,
-                                        state=Tasks.FINISHED)
+                                        state=Tasks.QUEUED)
             task.save()
 
             if 'params' in request.POST:
@@ -85,7 +86,7 @@ def task(request):
                                               file=f)
                     p.save()
 
-            # execute_task.delay(task.pk)
+            execute_task.delay(task.pk)
 
             result['correct_task_name'] = request.POST['name']
             result['status'] = 'ok'
