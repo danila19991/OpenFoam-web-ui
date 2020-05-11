@@ -1,12 +1,14 @@
 from django.http import HttpResponse, JsonResponse, FileResponse
 from .models import Tasks, Params
-from task_controller.tasks import execute_task
+from task_controller.tasks import HelloWorld, TaskDispatcher
+import json
 
 state_dict = {
     Tasks.QUEUED: 'queued',
     Tasks.IN_PROCESS: 'in progress',
     Tasks.ERRORED: 'errored',
     Tasks.FINISHED: 'finished',
+    Tasks.STOPED: 'stopped'
 }
 
 
@@ -60,6 +62,7 @@ def result(request):
 
 
 def task(request):
+    TaskDispatcher.get_instance()
     result = dict()
     if not request.user.is_authenticated:
         result['message'] = 'need auth'
@@ -68,27 +71,35 @@ def task(request):
 
     if request.method == 'POST':
         try:
-            if 'name' not in request.POST:
-                raise ValueError
-            task = Tasks.objects.create(name=request.POST['name'],
-                                        description=request.POST.get("description", None),
-                                        user=request.user,
-                                        state=Tasks.QUEUED)
-            task.save()
+            print(request.POST)
+            print(request.FILES)
+            # t = request.POST['tp']
+            # mv = request.POST['main_value']
+            # av = request.POST['add_param']
+            # print(t)
+            # print(mv)
+            # print(av)
 
-            if 'params' in request.POST:
-                for elem in request.POST['params']:
-                    f = None
-                    if 'file' in elem:
-                        f = elem['file']
-                    p = Params.objects.create(task=task,
-                                              args=elem['args'],
-                                              file=f)
-                    p.save()
+            # task = Tasks.objects.create(name=request.POST['name'],
+            #                             description=request.POST.get("description", None),
+            #                             user=request.user,
+            #                             state=Tasks.QUEUED)
+            # task.save()
 
-            execute_task.delay(task.pk)
+            # if 'params' in request.POST:
+            #     for elem in request.POST['params']:
+            #         f = None
+            #         if 'file' in elem:
+            #             f = elem['file']
+            #         p = Params.objects.create(task=task,
+            #                                   args=elem['args'],
+            #                                   file=f)
+            #         p.save()
 
-            result['correct_task_name'] = request.POST['name']
+            TaskDispatcher.get_instance()
+            # HelloWorld.execute_task.delay(task.pk)
+
+            # result['correct_task_name'] = request.POST['name']
             result['status'] = 'ok'
         except ValueError:
             result['incorrect_task_time'] = request.POST['time']
@@ -115,7 +126,11 @@ def task(request):
             except :
                 pass
         if flag and task:
-            task.delete()
+            if task.state == task.FINISHED:
+                task.delete()
+            else:
+                task.state = Tasks.STOPED
+                task.save()
             result['state'] = 'ok'
         else:
             result['message'] = 'incorrect task'
@@ -141,14 +156,19 @@ def task(request):
             result["info"] = {
                 'task_state': state_dict[task.state],
                 'name': task.name,
-                'description': task.description,
+                'params': json.loads(task.description),
                 'start_time': task.accept_time,
+                'param_file': task.param_file.url
             }
-            if task.result:
+            if task.state == Tasks.FINISHED:
                 result['result'] = {
-                    "file":task.result.url,
+                    "file": task.result_log_file.url,
+                    "finish_time": task.finish_time,
                     "log": task.log,
+                    "image": task.result_file.url
                 }
+            else:
+                result['result'] = False
             params = list()
             for param in Params.objects.filter(task=task):
                 elem = {
@@ -167,7 +187,8 @@ def task(request):
                 tasks_descr.append({
                     'id': task.id,
                     'name': task.name,
-                    'state': state_dict[task.state]
+                    'state': state_dict[task.state],
+                    'start_time': task.accept_time
                 }
                 )
 
@@ -175,3 +196,23 @@ def task(request):
             result['status'] = 'ok'
 
     return JsonResponse(result, content_type='application/json')
+
+
+def get_file(request, file_class, file_name):
+    # p = request.GET.get("path", None)
+    # if not p:
+    #     return JsonResponse({"error": "no path"}, content_type='application/json')
+    try:
+        # img = open("data/" + p, 'rb')
+        img = open("data/" + file_class + "/" + file_name, 'rb')
+
+        response = FileResponse(img)
+
+        return response
+    except FileNotFoundError:
+        return JsonResponse({"error": "not found"}, content_type='application/json', status=404)
+
+
+def params(request):
+    # j = {"params": TaskDispatcher.get_instance().get_all_params()}
+    return JsonResponse(TaskDispatcher.get_instance().get_all_params())

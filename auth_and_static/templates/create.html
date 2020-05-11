@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create</title>
+</head>
+<body>
+<h1>Create new task</h1>
+
+<form action="{% url 'auth_and_static:index' %}"  method="get">
+    {% csrf_token %}
+    <input type="submit" value="назад">
+</form>
+{#<button onclick="location.href = {% url 'auth_and_static:index' %}"> назад </button>#}
+<form id="new_task_old_post"  method="post" enctype="multipart/form-data">
+    <div id="django_scrf_token_post">
+        {% csrf_token %}
+    </div>
+    <table>
+        {% for name, type in params %}
+            <tr>
+                <td>{{ name }}</td>
+            <td>
+                {% if type == "string" %}
+    <input name="{{ name }}" type="text">
+                {% else %}
+    {{ form.file }}
+                {% endif %}
+            </td></tr>
+        {% endfor %}
+    </table>
+{#    <input name="tst" type="text">#}
+    <input type="submit" value="добавить задачу">
+</form>
+
+{{ error }}
+
+</body>
+</html>
