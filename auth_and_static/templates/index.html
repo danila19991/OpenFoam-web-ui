@@ -567,7 +567,7 @@ class TaskElemet extends React.Component{
             else {
                 var descr = this.state.info;
                 var small_im = {
-                    width: "75%"
+                    width: "50%"
                 }
                 const box = {
                     margin: 5,
@@ -602,7 +602,7 @@ class TaskElemet extends React.Component{
                             }
                             { this.state.result &&
                                 <div style={box}>лог рассчетов <br/>
-                                    <textarea disabled>
+                                    <textarea disabled cols="100" rows="40">
                                         {this.state.result.log}
                                     </textarea>
                                 </div>

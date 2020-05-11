@@ -21,6 +21,18 @@ def test_task_url_location(client, first_user_in_bd_logged_in):
            resp.content.decode()
     assert TestConstants.task_template in (t.name for t in resp.templates)
 
+@pytest.mark.django_db
+def test_create_task_url_location(client, first_user_in_bd_logged_in):
+    resp = client.get(reverse('auth_and_static:create'))
+    assert resp.status_code == TestConstants.ok_status_code
+    assert TestConstants.create_template in (t.name for t in resp.templates)
+
+@pytest.mark.django_db
+def test_create_task_error(client, first_user_in_bd_logged_in):
+    resp = client.post(reverse('auth_and_static:create'), {})
+    assert resp.status_code == TestConstants.ok_status_code
+    assert TestConstants.error_message in \
+           resp.content.decode()
 
 @pytest.mark.django_db
 def test_task_log_out(client, first_user_in_bd_logged_in):

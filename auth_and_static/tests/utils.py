@@ -17,12 +17,16 @@ class UserParams:
 class TestConstants:
     ok_status_code = 200
     redirect_status_code = 302
+    error_status_code = 400
+    error_message = 'ошибка в создании задачи'
     register_url = '/register/'
     register_template = 'register.html'
     login_url = '/login/'
     login_template = 'login.html'
     task_url = '/'
     task_template = 'index.html'
+    create_url = '/create/'
+    create_template = 'create.html'
 
 
 @pytest.yield_fixture()
