@@ -15,8 +15,7 @@
 
 <table>
     <tr>
-        <td>{{ user_name }}</td>
-        <td> previous tasks </td>
+        <td>{{ user_name }} previous tasks </td>
 <td>
 <form action="{% url 'auth_and_static:index' %}"  method="post">
     {% csrf_token %}
