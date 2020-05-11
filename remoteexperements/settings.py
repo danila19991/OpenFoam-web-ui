@@ -155,8 +155,19 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
+STATIC_ROOT = os.path.join(BASE_DIR,"static_files")
 STATIC_URL = '/static/'
+
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, "static"),
+)
+
 
 MEDIA_ROOT = BASE_DIR + '/data/'
 
 APPEND_SLASH = False
+
+USED_TASKS = [
+    'task_controller.tasks.HelloWorld',
+    'task_controller.tasks.HelloWorld2',
+]

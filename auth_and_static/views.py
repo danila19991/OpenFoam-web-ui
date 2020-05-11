@@ -63,6 +63,33 @@ def index(request):
     return HttpResponse(template.render(context, request))
 
 
+from task_controller.tasks import HelloWorld2
+from task_controller.forms import FileFieldForm
+
+@login_required(login_url='/login/')
+def create(request):
+    inst = HelloWorld2()
+    template = loader.get_template('create.html')
+    context = {
+        'params': list(inst.get_param_description()['params'].items()),
+        'task_name': inst.get_name(),
+        'user_name': request.user.username,
+        'form': FileFieldForm()
+    }
+    if request.method == 'POST':
+        print(request.POST)
+        print(request.FILES)
+        if inst.validate(request.POST, request.FILES):
+            print("ok")
+            id = inst.create_task(request.POST, request.FILES, request.user)
+            inst.execute_task(id)
+            #inst.execute_task.delay(id)
+            return HttpResponseRedirect(reverse('auth_and_static:index'))
+        else:
+            context["error"] = "ошибка в создании задачи"
+
+    return HttpResponse(template.render(context, request))
+
 def params(request):
     with open('task_params.json') as f_in:
         s = f_in.read()

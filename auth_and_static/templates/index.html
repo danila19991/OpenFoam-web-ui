@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{% load static %}
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -6,20 +7,24 @@
     <script type="application/javascript" src="https://unpkg.com/react@16.0.0/umd/react.production.min.js"></script>
     <script type="application/javascript" src="https://unpkg.com/react-dom@16.0.0/umd/react-dom.production.min.js"></script>
     <script type="application/javascript" src="https://unpkg.com/babel-standalone@6.26.0/babel.js"></script>
-
     <title>Tasks</title>
 </head>
 <body>
 
 <h1>Tasks</h1>
 
-<p>{{ user_name }} previous tasks</p>
-
+<table>
+    <tr>
+        <td>{{ user_name }}</td>
+        <td> previous tasks </td>
+<td>
 <form action="{% url 'auth_and_static:index' %}"  method="post">
     {% csrf_token %}
     <input type="submit" name="exit" value="exit">
 </form>
-
+</td>
+    </tr>
+</table>
 <form id="new_task_old_post"  method="post" hidden>
     <div id="django_scrf_token_post">
         {% csrf_token %}
@@ -62,11 +67,15 @@ class InvisibleElement extends React.Component{
     }
 
     render() {
+        let box = {
+            color: "red",
+        }
+
         if (this.props.message){
-            return <div>{this.props.message}</div>;
+            return <span style={box}>{this.props.message}</span>;
         }
         else{
-            return <div hidden>{this.props.message}</div>;
+            return <span hidden>{this.props.message}</span>;
         }
     }
 
@@ -168,25 +177,8 @@ class ListElemet extends React.Component{
                         del_error: data.message
                     });
                 }
-                {#if (data.status === "ok") {#}
-                {#    base.setState({#}
-                {#        isLoaded: true,#}
-                {#        items: data.tasks#}
-                {#    });#}
-                {# } else {#}
-                {#    base.setState({#}
-                {#        isLoaded: true,#}
-                {#        error: result.message#}
-                {#    });#}
-                {# }#}
             },
             error: function (jqxhr, status, errorMsg) {
-                {#base.setState({#}
-                {#    isLoaded: true,#}
-                {#    error: errorMsg#}
-                {# });#}
-                {#console.log("error");#}
-                {#console.log(errorMsg); // Возвращаемые данные выводим в консоль#}
                 base.setState({
                     del_error: errorMsg
                 });
@@ -203,7 +195,7 @@ class ListElemet extends React.Component{
             return (
                 <div>
                     <table id="task_list">
-                        <tr><td>имя</td><td>состояние</td></tr>
+                        <tr><td>имя</td><td>состояние</td><td>удалить</td></tr>
                         {items.map(item => (
                             <tr key={item.id}>
                                 <td>
@@ -213,9 +205,9 @@ class ListElemet extends React.Component{
                                 </td>
                                 <td>{item.state} </td>
                                 <td>
-                                    <a onClick={() => this.del_task(item.id)}>
-                                        del
-                                    </a>
+                                    <button onClick={() => this.del_task(item.id)}>
+                                        удалить
+                                    </button>
                                 </td>
                             </tr>
                         ))}
@@ -230,68 +222,134 @@ class ListElemet extends React.Component{
 class TextElemet extends React.Component{
     constructor(props) {
         super(props);
-        this.state = {value: ''};
-        this.handleChange = this.handleChange.bind(this);
     }
 
     handleChange(event) {
-        this.setState({value: event.target.value});
+        this.props.parent.saveValue(event.target.value);
+        event.preventDefault();
     }
 
     render() {
+        var tmp = '';
+        if(this.props.value)
+            tmp = this.props.value;
         return (
-            <input type="text" name={this.props.name} value={this.state.value} onChange={this.handleChange}/>
+            <input type="text" name={this.props.name} value={tmp} onChange={(event) => this.handleChange(event)}/>
+        );
+    }
+}
+class FileElemet extends React.Component{
+    constructor(props) {
+        super(props);
+    }
+
+    handleChange(event) {
+        this.props.parent.saveValue(event.target.value);
+        event.preventDefault();
+    }
+
+    render() {
+        var tmp = '';
+        if(this.props.value)
+            tmp = this.props.value;
+        return (
+            <input type="file" name={this.props.name} value={tmp} onChange={(event) => this.handleChange(event)}/>
         );
     }
 }
 
-class ParmersElement extends React.Component{
+class ParamElement extends React.Component{
     constructor(props){
         super(props);
-        this.state = {
-            num:epoch,
-            error: null,
-            isLoaded: false,
-            descr: null
-        };
+    }
+
+    saveValue(value){
+        if(this.props.parent)
+            if(this.props.parent.saveValue)
+                this.props.parent.saveValue(this.props.name, value);
     }
 
     render() {
-        let file;
-        if(this.props.args.need_file){
-            file = "тут будет файл";
+        switch (this.props.type) {
+            case 'string': return (<TextElemet name={this.props.name} value={this.props.value} parent={this}/>);
+            case 'file': return (<FileElemet name={this.props.name} value={this.props.value} parent={this}/>);
+            default: return (<TextElemet name={this.props.name} value={this.props.value} parent={this}/>);
         }
-        return (
-            <div>
-                {this.props.args.params.map((elem) => <span>{elem.name}<TextElemet name={elem.name}/></span>)}
-                {file}
-                {this.props.args.name}
-            </div>
-        );
     }
 }
 
-class AdditionParamsElement extends React.Component{
+class ParamsGroupElement extends React.Component{
     constructor(props){
         super(props);
         this.state = {
-            num:epoch,
-            error: null,
-            isLoaded: false,
-            descr: null
+            stored_value: Object(),
+            is_alive: true
         };
+        var s = null;
+        if(this.props.choice){
+            this.state.value = Object.keys(this.props.descr)[0];
+            s = this.state.value;
+        }
+        this.props.parent.handleSaveValue(this.props.num, Object(), s);
+    }
+
+    handleChange(event) {
+        var vbase = this;
+        this.props.parent.handleSaveValue(this.props.num, Object(), event.target.value);
+        vbase.setState({value: event.target.value, stored_value: Object()});
+    }
+
+    saveValue(name, value){
+        var tmp = this.state.stored_value;
+        tmp[name] = value;
+        this.props.parent.handleSaveValue(this.props.num, tmp, this.state.value);
+        this.setState({stored_value: tmp});
+    }
+
+    remove(){
+        this.props.parent.handleSaveValue(this.props.num, Object(), null);
+        this.setState({is_alive: false});
     }
 
     render() {
-        let file;
-        if(this.props.args.need_file){
-            file = "тут будет файл";
+        if(!this.state.is_alive)
+            return null;
+        let box = {
+            marginLeft: 5
         }
+        let box2 = {
+            marginLeft: 5,
+            marginRight: 5
+        }
+        var params = this.props.descr;
+        if(this.props.choice)
+            params = this.props.descr[this.state.value];
+
         return (
             <div>
-                {this.props.args.params.map((elem) => <span>{elem.name}<TextElemet /></span>)}
-                {file}
-                {this.props.args.name}
+                { this.props.choice &&
+                    <span>
+                    <select style={box} value={this.state.value}
+                            name="task_type"
+                            onChange={(event) => this.handleChange(event)}>
+                        {Object.keys(this.props.descr).map(elem => <option
+                            value={elem}>{elem}</option>)}
+                    </select>
+
+                    <span style={box} onClick={(event) => this.remove()}>
+                    убрать
+                    </span>
+                    </span>
+                }
+
+                <table id="main_params">
+                    {Object.keys(params).map((name) => <tr style={box}>
+                        <td style={box2}>{name}</td>
+                        <td><ParamElement type={params[name]} name={name} value={this.state.stored_value[name]} parent={this}/></td>
+                        <td><InvisibleElement message={null}/></td>
+                    </tr>)}
+                </table>
+
             </div>
         );
     }
@@ -305,7 +363,8 @@ class CreateElemet extends React.Component{
             error: null,
             isLoaded: false,
             descr: null,
-            value: null
+            value: null,
+            addParam: []
         };
     }
 
@@ -314,15 +373,16 @@ class CreateElemet extends React.Component{
         (function worker() {
             if(base.state.num == epoch){
                 $.ajax({
-                    url: "params/",
+                    url: "api/params/",
                     // dataType: "json", // Для использования JSON формата получаемых данных
                     method: "GET", // Что бы воспользоваться POST методом, меняем данную строку на POST
                     //data: {"id_product": id_product,"qty_product": qty_product},
                     success: function (data) {
+                        console.log(data);
                         base.setState({
                             isLoaded: true,
-                            descr: data.params,
-                            value:data.params[0].name
+                            descr: data,
+                            value:Object.keys(data)[0]
                         });
                     },
                     error: function (jqxhr, status, errorMsg) {
@@ -339,22 +399,36 @@ class CreateElemet extends React.Component{
     }
 
     handleSubmit(event){
-        var data = $('#new_task').serializeArray().reduce(function(obj, item) {
-            obj[item.name] = item.value;
-            return obj;
-        }, {});
+        {#console.log(this.state.addParam);#}
+        {#console.log(this.state.mainValue);#}
+        //var data = $('#new_task').serializeArray().reduce(function(obj, item) {
+        //    obj[item.name] = item.value;
+        //    return obj;
+        //}, {});
+        //var data = {
+        //    tp:this.state.value,
+        //    main_value: this.state.mainValue,
+        //    add_param: this.state.addParam
+        //}
+        event.preventDefault();
+        var data = this.state.mainValue;
         // csrfmiddlewaretoken
         $('#new_task_old_post').serializeArray().forEach(function(item) {
             if(item.name == "csrfmiddlewaretoken")
                 data[item.name] = item.value;
         });
+        var qwer = new FormData()
+        
+        console.log( qwer)
         console.log(data);
         var base = this;
         $.ajax({
             url: "api/task/",
             dataType: "json", // Для использования JSON формата получаемых данных
        	    method: "POST", // Что бы воспользоваться POST методом, меняем данную строку на POST
-    	    data: data,
+            //contentType: 'application/json',
+    	    data: (data),
+    	    //data: FormData(('#new_task_old_post')),
        	    success: function(data) {
                 base.props.parent.toList();
             },
@@ -363,12 +437,33 @@ class CreateElemet extends React.Component{
                 console.log(errorMsg); // Возвращаемые данные выводим в консоль
             }
         });
-        event.preventDefault();
     }
 
     handleChange(event) {
         var vbase = this;
-        vbase.setState({value: event.target.value});
+        vbase.setState({value: event.target.value, addParam: []});
+    }
+
+    handleSaveValue(num, value, tp){
+        console.log(num);
+        if(num === undefined)
+            this.state.mainValue = value;
+        else
+            this.state.addParam[num] = {tp:tp, value:value};
+    }
+
+    handleRemoveParams(num){
+        var vbase = this;
+        let temp = this.state.addParam;
+        temp.splice(num, 1);
+        vbase.setState({addParam: temp});
+    }
+
+    handleAddParams(event) {
+        var vbase = this;
+        let temp = this.state.addParam;
+        temp.push({tp: null, value: Object()});
+        vbase.setState({addParam: temp});
     }
 
     render() {
@@ -377,21 +472,35 @@ class CreateElemet extends React.Component{
             return <div>Загрузка...</div>;
         }
         else{
-            var loc_data = null;
-            descr.forEach((elem) => {
-                if(elem.name == this.state.value)
-                    loc_data = elem;
-            });
+            var loc_data = descr[this.state.value];
+            const box = {
+                margin: 5,
+            }
+            var num = 0;
+
             return (
                 <div>
                     <form id="new_task" onSubmit={(event) => this.handleSubmit(event)}>
-                        <select value={this.state.value} name="task_type" onChange={(event) => this.handleChange(event)}>
-                            {descr.map(elem => <option value={elem.name}>{elem.name}</option>)}
+                        <select style={box} value={this.state.value} name="task_type" onChange={(event) => this.handleChange(event)}>
+                            {Object.keys(descr).map(elem => <option value={elem}>{elem}</option>)}
                         </select>
-                        <ParmersElement args={loc_data.main_params}/>
-                        <div id="special_params">
-
+                        <div id="main_params">
+                            <ParamsGroupElement descr={loc_data.params} parent={this}/>
                         </div>
+                        {loc_data.add_param_blocks &&
+                        <div>
+                            <div id="special_params">
+                                {this.state.addParam.map((elem) =>
+                                    <ParamsGroupElement choice={true}
+                                                    descr={loc_data.add_param_blocks}
+                                                    parent={this}
+                                                    num={num++}/>)}
+                            </div>
+                            <div style={box} onClick={(event) => this.handleAddParams(event)}>
+                                добавить параметры
+                            </div>
+                        </div>
+                        }
                         <input type="submit"/>
                   </form>
               </div>
@@ -425,6 +534,7 @@ class TaskElemet extends React.Component{
                         "id": base.props.value,
                     },
                     success: function (data) {
+                        console.log(data);
                         base.setState({
                             isLoaded: true,
                             info: data.info,
@@ -456,17 +566,49 @@ class TaskElemet extends React.Component{
                 );
             }
             else {
+                var descr = this.state.info;
+                var small_im = {
+                    width: "75%"
+                }
+                const box = {
+                    margin: 5,
+                }
+
                 return (
                     <div id="res">
-                       следующая информаиця:
+                       информация о задаче:
                         <table id="task_list">
-                            <tr><td>параметр</td><td>значение</td></tr>
-                            {Object.keys(this.state.info).map((key, index) => (
-                                <tr>
-                                    <td>{key}</td><td>{this.state.info[key]} </td>
+                            {#<tr><td>параметр</td><td>значение</td></tr>#}
+                            <tr style={box}><td>назвение</td><td>{descr.name}</td></tr>
+                            <tr style={box}><td>состояние</td><td>{descr.task_state}</td></tr>
+                            <tr style={box}><td>время начала</td><td>{descr.start_time}</td></tr>
+                            <tr style={box}><td>использованная модель</td><td><a href={"api/download/"+descr.param_file} download>скачать</a></td></tr>
+                            {Object.keys(descr.params).map((key, index) => (
+                                <tr style={box}>
+                                    <td>{key}</td><td>{descr.params[key]} </td>
                                 </tr>
                             ))}
+                            { this.state.result &&
+                                <tr style={box}><td>получившаяся конфигурация</td><td>{this.state.result.finish_time}</td></tr>
+                            }
+                            { this.state.result &&
+                                <tr style={box}><td>получившаяся конфигурация</td><td><a href={"api/download/"+this.state.result.file} download>скачать</a></td></tr>
+                            }
                         </table>
+                        { this.state.result &&
+                                <div style={box}>
+                                    изображение поля скорстей <br/>
+                                    <img src={"api/download/"+this.state.result.image} alt="да грузись уже" style={small_im} />
+                                </div>
+                            }
+                            { this.state.result &&
+                                <div style={box}>лог рассчетов <br/>
+                                    <textarea disabled>
+                                        {this.state.result.log}
+                                    </textarea>
+                                </div>
+                            }
+
                     </div>
                 );
             }
@@ -519,7 +661,8 @@ class MainElement extends React.Component {
         if(this.state.action == 1) {
             return (
                 <div id="main_tasks">
-                    <a onClick={() => this.toCreate()}> новая задача </a>
+                    <a href="{% url 'auth_and_static:create' %}"> новая задача </a>
+
                     <ListElemet parent={this}/>
                 </div>
             );
@@ -527,7 +670,7 @@ class MainElement extends React.Component {
         else if(this.state.action == 2){
             return (
                 <div id="main_tasks">
-                    <a onClick={() => this.toList()}> назад </a>
+                    <button onClick={() => this.toList()}> назад </button>
                     <CreateElemet  parent={this}/>
                 </div>
             );
@@ -535,7 +678,7 @@ class MainElement extends React.Component {
         else if(this.state.action == 3){
             return (
                 <div id="main_tasks">
-                    <a onClick={() => this.toList()}> назад </a>
+                    <button onClick={() => this.toList()}> назад </button>
                     <TaskElemet value={this.state.task_id}/>
                 </div>
             );
