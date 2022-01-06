@@ -2,7 +2,7 @@ Django==3.1.13
 pytest==3.8.2
 pytest-django==3.4.3
 psycopg2-binary==2.8.4
-celery==4.3.0
+celery==5.2.2
 django-celery==3.3.1
 coverage==5.0.3
 codecov==2.0.22
